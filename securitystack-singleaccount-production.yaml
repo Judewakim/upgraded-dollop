@@ -51,7 +51,7 @@ Resources:
         Rules:
           - Id: MoveToIA30Days
             Status: Enabled
-            Filter: {}
+            Prefix: ""
             Transition:
               StorageClass: STANDARD_IA
               TransitionInDays: 30
@@ -60,13 +60,13 @@ Resources:
                 TransitionInDays: 30
           - Id: MoveToGlacier365Days
             Status: Enabled
-            Filter: {}
+            Prefix: ""
             Transition:
               StorageClass: GLACIER
               TransitionInDays: 365
           - Id: ExpireAfter7Years
             Status: Enabled
-            Filter: {}
+            Prefix: ""
             ExpirationInDays: 2555
     DeletionPolicy: Retain
 
