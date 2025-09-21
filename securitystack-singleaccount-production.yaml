@@ -1,8 +1,8 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
-  Production Security Stack (single-account) - central S3 + config recorder + delivery channel + conformance pack uploader
+  Security Stack (single-account) - centralized S3 + config recorder + delivery channel + conformance pack uploader
   + SNS notifications + scheduled reporter. Includes lifecycle rules and hardened IAM policies.
-  Tag all resources with security-stack: "true".
+  Tags all allowed resources with security-stack: "true".
 
 Parameters:
   EmailAddress:
