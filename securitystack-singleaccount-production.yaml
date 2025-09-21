@@ -37,6 +37,9 @@ Resources:
     Type: AWS::S3::Bucket
     Properties:
       BucketName: !Ref CentralBucketName
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: ObjectWriter
       VersioningConfiguration:
         Status: Enabled
       PublicAccessBlockConfiguration:
@@ -48,7 +51,7 @@ Resources:
         Rules:
           - Id: MoveToIA30Days
             Status: Enabled
-            Prefix: ""
+            Filter: {}
             Transition:
               StorageClass: STANDARD_IA
               TransitionInDays: 30
@@ -57,13 +60,13 @@ Resources:
                 TransitionInDays: 30
           - Id: MoveToGlacier365Days
             Status: Enabled
-            Prefix: ""
+            Filter: {}
             Transition:
               StorageClass: GLACIER
               TransitionInDays: 365
           - Id: ExpireAfter7Years
             Status: Enabled
-            Prefix: ""
+            Filter: {}
             ExpirationInDays: 2555
     DeletionPolicy: Retain
 
