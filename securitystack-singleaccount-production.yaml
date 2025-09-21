@@ -87,8 +87,8 @@ Resources:
               - !Sub "${CentralConfigBucket.Arn}/*"
             Condition:
               # Ensure actions are only permitted from the same account (optional protective measure)
-              ArnEquals:
-                aws:SourceAccount: !Ref "AWS::AccountId"
+              StringEquals:
+                aws:SourceAccount: !Sub "AWS::AccountId"
 
   ##################################################
   # Uploader Lambda role - scoped to bucket objects
