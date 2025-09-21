@@ -81,17 +81,18 @@ Resources:
             Principal:
               Service: config.amazonaws.com
             Action: s3:PutObject
-            Resource: !Sub "${CentralConfigBucket.Arn}/*"
+            Resource: !Sub "arn:aws:s3:::${CentralBucketName}/*"
             Condition:
               StringEquals:
                 aws:SourceAccount: !Sub "${AWS::AccountId}"
+                s3:x-amz-acl: bucket-owner-full-control
 
           - Sid: AllowConfigGetBucketAcl
             Effect: Allow
             Principal:
               Service: config.amazonaws.com
             Action: s3:GetBucketAcl
-            Resource: !GetAtt CentralConfigBucket.Arn
+            Resource: !Sub "arn:aws:s3:::${CentralBucketName}"
             Condition:
               StringEquals:
                 aws:SourceAccount: !Sub "${AWS::AccountId}"
@@ -101,10 +102,11 @@ Resources:
             Principal:
               Service: config.amazonaws.com
             Action: s3:GetBucketLocation
-            Resource: !GetAtt CentralConfigBucket.Arn
+            Resource: !Sub "arn:aws:s3:::${CentralBucketName}"
             Condition:
               StringEquals:
                 aws:SourceAccount: !Sub "${AWS::AccountId}"
+
 
   ##################################################
   # Uploader Lambda role - scoped to bucket objects
