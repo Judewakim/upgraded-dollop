@@ -34,37 +34,37 @@ Resources:
   # Central S3 bucket (SSE-S3) + lifecycle
   ########################################
   CentralConfigBucket:
-  Type: AWS::S3::Bucket
-  Properties:
-    BucketName: !Ref CentralBucketName
-    VersioningConfiguration:
-      Status: Enabled
-    PublicAccessBlockConfiguration:
-      BlockPublicAcls: true
-      IgnorePublicAcls: true
-      BlockPublicPolicy: true
-      RestrictPublicBuckets: true
-    LifecycleConfiguration:
-      Rules:
-        - Id: MoveToIA30Days
-          Status: Enabled
-          Prefix: ""
-          Transition:
-            StorageClass: STANDARD_IA
-            TransitionInDays: 30
-          NoncurrentVersionTransitions:
-            - StorageClass: STANDARD_IA
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref CentralBucketName
+      VersioningConfiguration:
+        Status: Enabled
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        IgnorePublicAcls: true
+        BlockPublicPolicy: true
+        RestrictPublicBuckets: true
+      LifecycleConfiguration:
+        Rules:
+          - Id: MoveToIA30Days
+            Status: Enabled
+            Prefix: ""
+            Transition:
+              StorageClass: STANDARD_IA
               TransitionInDays: 30
-        - Id: MoveToGlacier365Days
-          Status: Enabled
-          Prefix: ""
-          Transition:
-            StorageClass: GLACIER
-            TransitionInDays: 365
-        - Id: ExpireAfter7Years
-          Status: Enabled
-          Prefix: ""
-          ExpirationInDays: 2555
+            NoncurrentVersionTransitions:
+              - StorageClass: STANDARD_IA
+                TransitionInDays: 30
+          - Id: MoveToGlacier365Days
+            Status: Enabled
+            Prefix: ""
+            Transition:
+              StorageClass: GLACIER
+              TransitionInDays: 365
+          - Id: ExpireAfter7Years
+            Status: Enabled
+            Prefix: ""
+            ExpirationInDays: 2555
   DeletionPolicy: Retain
 
 
