@@ -227,7 +227,7 @@ Resources:
       - ConformancePackUploaderFunction
 
   ####################################################
-  # Config service role (scoped to service-role managed policy)
+  # Config service role (inline policy for single-account)
   ####################################################
   ConfigServiceRole:
     Type: AWS::IAM::Role
@@ -240,8 +240,30 @@ Resources:
             Principal:
               Service: config.amazonaws.com
             Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSConfigRole
+      Policies:
+        - PolicyName: ConfigServiceInlinePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              # Allow Config to deliver configuration snapshots to S3
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:GetBucketAcl
+                  - s3:GetBucketLocation
+                Resource: !Sub "${CentralConfigBucket.Arn}/*"
+              # Allow Config to publish to SNS notifications
+              - Effect: Allow
+                Action:
+                  - sns:Publish
+                Resource: !Ref ConfigNotificationsTopic
+              # Allow Config to manage resources and retrieve information
+              - Effect: Allow
+                Action:
+                  - config:Put* 
+                  - config:Get* 
+                  - config:Describe* 
+                Resource: "*"
 
   ####################################################
   # Configuration Recorder (records all supported & global types)
