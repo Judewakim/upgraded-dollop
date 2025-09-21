@@ -2,7 +2,6 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: >
   Security Stack (single-account) - centralized S3 + config recorder + delivery channel + conformance pack uploader
   + SNS notifications + scheduled reporter. Includes lifecycle rules and hardened IAM policies.
-  Tags all allowed resources with security-stack: "true".
 
 Parameters:
   EmailAddress:
@@ -67,9 +66,6 @@ Resources:
             Status: Enabled
             Prefix: ""
             ExpirationInDays: 2555
-      Tags:
-        - Key: security-stack
-          Value: "true"
     DeletionPolicy: Retain
 
   # Minimal bucket policy allowing AWS Config service in THIS account/region to put objects
@@ -141,9 +137,6 @@ Resources:
         Variables:
           BUCKET: !Ref CentralConfigBucket
           KEY: !Ref ConformancePackS3Key
-      Tags:
-        - Key: security-stack
-          Value: "true"
       Code:
         ZipFile: |
           import os, json, boto3, traceback, urllib.request
@@ -273,9 +266,6 @@ Resources:
       Subscription:
         - Protocol: email
           Endpoint: !Ref EmailAddress
-      Tags:
-        - Key: security-stack
-          Value: "true"
 
   ####################################################
   # Delivery Channel - writes to central S3 and SNS
@@ -362,9 +352,6 @@ Resources:
               except Exception as e:
                 traceback.print_exc()
                 send_cfn_response(event, context, "FAILED", reason=str(e))
-    Tags:
-      - Key: security-stack
-        Value: "true"
 
   StartRecorderCustom:
     Type: Custom::StartConfigRecorder
@@ -438,9 +425,6 @@ Resources:
           PACK_NAME: !Ref ConformancePackName
           CENTRAL_BUCKET: !Ref CentralConfigBucket
           REPORT_EMAIL: !Ref EmailAddress
-      Tags:
-        - Key: security-stack
-          Value: "true"
       Code:
         ZipFile: |
           import boto3, os, json, traceback
