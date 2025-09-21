@@ -37,6 +37,7 @@ Resources:
     Type: AWS::S3::Bucket
     Properties:
       BucketName: !Ref CentralBucketName
+      AccessControl: BucketOwnerFullControl
       OwnershipControls:
         Rules:
           - ObjectOwnership: ObjectWriter
