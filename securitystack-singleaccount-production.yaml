@@ -53,7 +53,7 @@ Resources:
               StorageClass: STANDARD_IA
               TransitionInDays: 30
             NoncurrentVersionTransitions:
-              - StorageClass: STANDARD_IA
+                StorageClass: STANDARD_IA
                 NoncurrentDays: 30
           - Id: MoveToGlacier365Days
             Status: Enabled
