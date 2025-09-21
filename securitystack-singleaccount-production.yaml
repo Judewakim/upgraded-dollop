@@ -9,7 +9,7 @@ Parameters:
     Description: "Email address to subscribe to SNS for config reports (recipient must confirm subscription)."
   CentralBucketName:
     Type: String
-    Default: !Sub "securitystack-config-${AWS::AccountId}-${AWS::Region}"
+    Default: "securitystack-config-upgraded-dollop"
     Description: "Central S3 bucket name (must be globally unique)."
   ConformancePackS3Key:
     Type: String
