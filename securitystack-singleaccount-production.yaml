@@ -45,27 +45,27 @@ Resources:
         BlockPublicPolicy: true
         RestrictPublicBuckets: true
       LifecycleConfiguration:
-  Rules:
-    - Id: MoveToIA30Days
-      Status: Enabled
-      Prefix: ""
-      Transition:
-        StorageClass: STANDARD_IA
-        TransitionInDays: 30
-      NoncurrentVersionTransitions:
-        - StorageClass: STANDARD_IA
-          NoncurrentDays: 30
-    - Id: MoveToGlacier365Days
-      Status: Enabled
-      Prefix: ""
-      Transition:
-        StorageClass: GLACIER
-        TransitionInDays: 365
-    - Id: ExpireAfter7Years
-      Status: Enabled
-      Prefix: ""
-      ExpirationInDays: 2555
-  DeletionPolicy: Retain
+        Rules:
+          - Id: MoveToIA30Days
+            Status: Enabled
+            Prefix: ""
+            Transition:
+              StorageClass: STANDARD_IA
+              TransitionInDays: 30
+            NoncurrentVersionTransitions:
+              - StorageClass: STANDARD_IA
+                NoncurrentDays: 30
+          - Id: MoveToGlacier365Days
+            Status: Enabled
+            Prefix: ""
+            Transition:
+              StorageClass: GLACIER
+              TransitionInDays: 365
+          - Id: ExpireAfter7Years
+            Status: Enabled
+            Prefix: ""
+            ExpirationInDays: 2555
+    DeletionPolicy: Retain
 
   # Minimal bucket policy allowing AWS Config service in THIS account/region to put objects
   CentralBucketPolicy:
