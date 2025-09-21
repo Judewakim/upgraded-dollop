@@ -85,7 +85,7 @@ Resources:
             Principal:
               Service: config.amazonaws.com
             Action: s3:PutObject
-            Resource: !Sub "arn:aws:s3:::${CentralBucketName}/*"
+            Resource: !Sub "arn:aws:s3:::${CentralBucketName}/AWSLogs/${AWS::AccountId}/Config/*"
             Condition:
               StringEquals:
                 aws:SourceAccount: !Sub "${AWS::AccountId}"
@@ -110,7 +110,17 @@ Resources:
             Condition:
               StringEquals:
                 aws:SourceAccount: !Sub "${AWS::AccountId}"
-
+          
+          - Sid: AllowConfigListBucket
+            Effect: Allow
+            Principal:
+              Service: config.amazonaws.com
+            Action: s3:ListBucket
+            Resource: !Sub "arn:aws:s3:::${CentralBucketName}"
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Sub "${AWS::AccountId}"
+      
 
   ##################################################
   # Uploader Lambda role - scoped to bucket objects
@@ -271,9 +281,16 @@ Resources:
               - Effect: Allow
                 Action:
                   - s3:PutObject
+                Resource: !Sub "arn:aws:s3:::${CentralBucketName}/*"
+              - Effect: Allow
+                Action:
+                  - s3:ListBucket
                   - s3:GetBucketAcl
                   - s3:GetBucketLocation
-                Resource: !Sub "${CentralConfigBucket.Arn}/*"
+                Resource: !Sub "arn:aws:s3:::${CentralBucketName}"
+                Condition:
+                  StringEquals:
+                    aws:SourceAccount: !Sub "${AWS::AccountId}" 
               # Allow Config to publish to SNS notifications
               - Effect: Allow
                 Action:
