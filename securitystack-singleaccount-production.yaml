@@ -65,7 +65,7 @@ Resources:
             Status: Enabled
             Prefix: ""
             ExpirationInDays: 2555
-  DeletionPolicy: Retain
+    DeletionPolicy: Retain
 
 
   # Minimal bucket policy allowing AWS Config service in THIS account/region to put objects
