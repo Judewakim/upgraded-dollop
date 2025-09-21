@@ -86,6 +86,16 @@ Resources:
               StringEquals:
                 aws:SourceAccount: !Sub "${AWS::AccountId}"
 
+          - Sid: AllowConfigGetBucketAcl
+            Effect: Allow
+            Principal:
+              Service: config.amazonaws.com
+            Action: s3:GetBucketAcl
+            Resource: !GetAtt CentralConfigBucket.Arn
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Sub "${AWS::AccountId}"
+
           - Sid: AllowConfigGetBucketLocation
             Effect: Allow
             Principal:
