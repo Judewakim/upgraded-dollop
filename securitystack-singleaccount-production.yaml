@@ -124,9 +124,6 @@ Resources:
                 Resource:
                   - !Sub "${CentralConfigBucket.Arn}/${ConformancePackS3Key}"
                   - !Sub "${CentralConfigBucket.Arn}/conformance-packs/*"
-    Tags:
-      - Key: security-stack
-        Value: "true"
 
   ####################################################
   # Conformance pack uploader Lambda (custom resource)
@@ -252,9 +249,6 @@ Resources:
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSConfigRole
-    Tags:
-      - Key: security-stack
-        Value: "true"
 
   ####################################################
   # Configuration Recorder (records all supported & global types)
@@ -324,9 +318,6 @@ Resources:
                   - config:StartConfigurationRecorder
                   - config:DescribeConfigurationRecorders
                 Resource: !Sub "arn:aws:config:${AWS::Region}:${AWS::AccountId}:*"
-    Tags:
-      - Key: security-stack
-        Value: "true"
 
   StartRecorderFunction:
     Type: AWS::Lambda::Function
@@ -431,9 +422,6 @@ Resources:
                   - sns:Publish
                 Resource:
                   - !Ref ConfigNotificationsTopic
-    Tags:
-      - Key: security-stack
-        Value: "true"
 
   ReporterFunction:
     Type: AWS::Lambda::Function
