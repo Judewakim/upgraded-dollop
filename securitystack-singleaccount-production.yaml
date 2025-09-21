@@ -76,19 +76,25 @@ Resources:
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
-          - Sid: AllowConfigPut
+          - Sid: AllowConfigPutObject
             Effect: Allow
             Principal:
               Service: config.amazonaws.com
-            Action:
-              - s3:PutObject
-              - s3:GetBucketLocation
-            Resource:
-              - !Sub "${CentralConfigBucket.Arn}/*"
+            Action: s3:PutObject
+            Resource: !Sub "${CentralConfigBucket.Arn}/*"
             Condition:
-              # Ensure actions are only permitted from the same account (optional protective measure)
               StringEquals:
-                aws:SourceAccount: !Sub "AWS::AccountId"
+                aws:SourceAccount: !Sub "${AWS::AccountId}"
+
+          - Sid: AllowConfigGetBucketLocation
+            Effect: Allow
+            Principal:
+              Service: config.amazonaws.com
+            Action: s3:GetBucketLocation
+            Resource: !GetAtt CentralConfigBucket.Arn
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Sub "${AWS::AccountId}"
 
   ##################################################
   # Uploader Lambda role - scoped to bucket objects
