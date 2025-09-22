@@ -80,46 +80,22 @@ Resources:
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
-          - Sid: AllowConfigPutObject
+          - Sid: AllowConfigFullAccessTemp
             Effect: Allow
             Principal:
               Service: config.amazonaws.com
-            Action: s3:PutObject
-            Resource: !Sub "arn:aws:s3:::${CentralBucketName}/AWSLogs/${AWS::AccountId}/Config/*"
-            Condition:
-              StringEquals:
-                aws:SourceAccount: !Sub "${AWS::AccountId}"
-                s3:x-amz-acl: bucket-owner-full-control
-
-          - Sid: AllowConfigGetBucketAcl
-            Effect: Allow
-            Principal:
-              Service: config.amazonaws.com
-            Action: s3:GetBucketAcl
-            Resource: !Sub "arn:aws:s3:::${CentralBucketName}"
-            Condition:
-              StringEquals:
-                aws:SourceAccount: !Sub "${AWS::AccountId}"
-
-          - Sid: AllowConfigGetBucketLocation
-            Effect: Allow
-            Principal:
-              Service: config.amazonaws.com
-            Action: s3:GetBucketLocation
-            Resource: !Sub "arn:aws:s3:::${CentralBucketName}"
-            Condition:
-              StringEquals:
-                aws:SourceAccount: !Sub "${AWS::AccountId}"
-          
-          - Sid: AllowConfigListBucket
-            Effect: Allow
-            Principal:
-              Service: config.amazonaws.com
-            Action: s3:ListBucket
-            Resource: !Sub "arn:aws:s3:::${CentralBucketName}"
-            Condition:
-              StringEquals:
-                aws:SourceAccount: !Sub "${AWS::AccountId}"
+            Action: 
+              - s3:PutObject
+              - s3:GetBucketAcl
+              - s3:GetBucketLocation
+              - s3:ListBucket
+              - s3:ListBucketMultipartUploads
+              - s3:GetObject
+              - s3:GetObjectAcl
+              - s3:PutObjectAcl
+            Resource:
+              - !Sub "arn:aws:s3:::${CentralBucketName}"
+              - !Sub "arn:aws:s3:::${CentralBucketName}/*"
       
 
   ##################################################
@@ -317,6 +293,13 @@ Resources:
         IncludeGlobalResourceTypes: true
     DependsOn: ConfigServiceRole
 
+  ConfigRecorderStatus:
+    Type: AWS::Config::ConfigurationRecorderStatus
+    Properties:
+      Name: !GetAtt ConfigRecorder.Name
+      IsEnabled: true
+    DependsOn: ConfigRecorder
+
   ####################################################
   # SNS topic and subscription (email)
   ####################################################
@@ -341,85 +324,85 @@ Resources:
     DependsOn:
       - ConformancePackUploaderCustom
 
-  ####################################################
-  # Lambda to start the recorder - limited policy to account/region
-  ####################################################
-  StartRecorderRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: !Sub "${AWS::StackName}-start-recorder-role"
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-      Policies:
-        - PolicyName: StartRecorderPolicy
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              # config:StartConfigurationRecorder cannot be restricted to a precise ARN in some regions/APIs
-              # We scope it to this account/region using a "starts-with" style with the config resource prefix.
-              - Effect: Allow
-                Action:
-                  - config:StartConfigurationRecorder
-                  - config:DescribeConfigurationRecorders
-                Resource: !Sub "arn:aws:config:${AWS::Region}:${AWS::AccountId}:*"
+  # ####################################################
+  # # Lambda to start the recorder - limited policy to account/region
+  # ####################################################
+  # StartRecorderRole:
+  #   Type: AWS::IAM::Role
+  #   Properties:
+  #     RoleName: !Sub "${AWS::StackName}-start-recorder-role"
+  #     AssumeRolePolicyDocument:
+  #       Version: '2012-10-17'
+  #       Statement:
+  #         - Effect: Allow
+  #           Principal:
+  #             Service: lambda.amazonaws.com
+  #           Action: sts:AssumeRole
+  #     ManagedPolicyArns:
+  #       - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+  #     Policies:
+  #       - PolicyName: StartRecorderPolicy
+  #         PolicyDocument:
+  #           Version: '2012-10-17'
+  #           Statement:
+  #             # config:StartConfigurationRecorder cannot be restricted to a precise ARN in some regions/APIs
+  #             # We scope it to this account/region using a "starts-with" style with the config resource prefix.
+  #             - Effect: Allow
+  #               Action:
+  #                 - config:StartConfigurationRecorder
+  #                 - config:DescribeConfigurationRecorders
+  #               Resource: !Sub "arn:aws:config:${AWS::Region}:${AWS::AccountId}:*"
 
-  StartRecorderFunction:
-    Type: AWS::Lambda::Function
-    Properties:
-      FunctionName: !Sub "${AWS::StackName}-start-config-recorder"
-      Runtime: python3.11
-      Handler: index.handler
-      Role: !GetAtt StartRecorderRole.Arn
-      Timeout: 60
-      MemorySize: 128
-      Code:
-        ZipFile: |
-          import json, boto3, urllib.request, traceback
-          cfg = boto3.client('config')
+  # StartRecorderFunction:
+  #   Type: AWS::Lambda::Function
+  #   Properties:
+  #     FunctionName: !Sub "${AWS::StackName}-start-config-recorder"
+  #     Runtime: python3.11
+  #     Handler: index.handler
+  #     Role: !GetAtt StartRecorderRole.Arn
+  #     Timeout: 60
+  #     MemorySize: 128
+  #     Code:
+  #       ZipFile: |
+  #         import json, boto3, urllib.request, traceback
+  #         cfg = boto3.client('config')
 
-          def send_cfn_response(event, context, status, reason=None):
-              response_body = {
-                  'Status': status,
-                  'Reason': reason or ('See CloudWatch Logs: ' + context.log_stream_name),
-                  'PhysicalResourceId': context.log_stream_name,
-                  'StackId': event.get('StackId'),
-                  'RequestId': event.get('RequestId'),
-                  'LogicalResourceId': event.get('LogicalResourceId'),
-                  'Data': {}
-              }
-              data = json.dumps(response_body).encode('utf-8')
-              req = urllib.request.Request(event['ResponseURL'], data=data, method='PUT')
-              req.add_header('Content-Type', '')
-              req.add_header('Content-Length', str(len(data)))
-              try:
-                  urllib.request.urlopen(req)
-              except Exception as e:
-                  print("Failed sending CFN response:", e)
+  #         def send_cfn_response(event, context, status, reason=None):
+  #             response_body = {
+  #                 'Status': status,
+  #                 'Reason': reason or ('See CloudWatch Logs: ' + context.log_stream_name),
+  #                 'PhysicalResourceId': context.log_stream_name,
+  #                 'StackId': event.get('StackId'),
+  #                 'RequestId': event.get('RequestId'),
+  #                 'LogicalResourceId': event.get('LogicalResourceId'),
+  #                 'Data': {}
+  #             }
+  #             data = json.dumps(response_body).encode('utf-8')
+  #             req = urllib.request.Request(event['ResponseURL'], data=data, method='PUT')
+  #             req.add_header('Content-Type', '')
+  #             req.add_header('Content-Length', str(len(data)))
+  #             try:
+  #                 urllib.request.urlopen(req)
+  #             except Exception as e:
+  #                 print("Failed sending CFN response:", e)
 
-          def handler(event, context):
-              try:
-                if event['RequestType'] in ('Create', 'Update'):
-                  cfg.start_configuration_recorder(ConfigurationRecorderName='default')
-                  send_cfn_response(event, context, "SUCCESS")
-                else:
-                  send_cfn_response(event, context, "SUCCESS")
-              except Exception as e:
-                traceback.print_exc()
-                send_cfn_response(event, context, "FAILED", reason=str(e))
+  #         def handler(event, context):
+  #             try:
+  #               if event['RequestType'] in ('Create', 'Update'):
+  #                 cfg.start_configuration_recorder(ConfigurationRecorderName='default')
+  #                 send_cfn_response(event, context, "SUCCESS")
+  #               else:
+  #                 send_cfn_response(event, context, "SUCCESS")
+  #             except Exception as e:
+  #               traceback.print_exc()
+  #               send_cfn_response(event, context, "FAILED", reason=str(e))
 
-  StartRecorderCustom:
-    Type: Custom::StartConfigRecorder
-    Properties:
-      ServiceToken: !GetAtt StartRecorderFunction.Arn
-    DependsOn:
-      - ConfigDeliveryChannel
+  # StartRecorderCustom:
+  #   Type: Custom::StartConfigRecorder
+  #   Properties:
+  #     ServiceToken: !GetAtt StartRecorderFunction.Arn
+  #   DependsOn:
+  #     - ConfigDeliveryChannel
 
   ####################################################
   # Conformance Pack resource (points to uploaded S3 object)
