@@ -294,11 +294,12 @@ Resources:
     DependsOn: ConfigServiceRole
 
   ConfigRecorderStatus:
-    Type: AWS::Config::ConfigurationRecorderStatus
-    Properties:
-      Name: !GetAtt ConfigRecorder.Name
-      IsEnabled: true
-    DependsOn: ConfigRecorder
+  Type: AWS::Config::ConfigurationRecorderStatus
+  Properties:
+    Name: !Ref ConfigRecorder   # this is valid
+    IsEnabled: true
+  DependsOn: ConfigRecorder
+
 
   ####################################################
   # SNS topic and subscription (email)
