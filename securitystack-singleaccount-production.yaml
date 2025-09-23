@@ -75,27 +75,30 @@ Resources:
   # Minimal bucket policy allowing AWS Config service in THIS account/region to put objects
   CentralBucketPolicy:
     Type: AWS::S3::BucketPolicy
+    DependsOn: CentralConfigBucket
     Properties:
       Bucket: !Ref CentralConfigBucket
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
-          - Sid: AllowConfigFullAccessTemp
+          - Sid: AWSConfigBucketAccess
             Effect: Allow
             Principal:
               Service: config.amazonaws.com
             Action: 
-              - s3:PutObject
               - s3:GetBucketAcl
-              - s3:GetBucketLocation
               - s3:ListBucket
-              - s3:ListBucketMultipartUploads
-              - s3:GetObject
-              - s3:GetObjectAcl
-              - s3:PutObjectAcl
-            Resource:
-              - !Sub "arn:aws:s3:::${CentralBucketName}"
-              - !Sub "arn:aws:s3:::${CentralBucketName}/*"
+              - s3:GetBucketLocation
+            Resource: !Sub arn:aws:s3:::${CentralBucketName}
+          - Sid: AWSConfigObjectAccess
+            Effect: Allow
+            Principal:
+              Service: config.amazonaws.com
+            Action: s3:PutObject
+            Resource: !Sub arn::aws::s3:::${CentralBucketName}/*
+            Condition:
+              StringEquals:
+                "s3:x-amz-acl": "bucket-owner-full-control"
       
 
   ##################################################
