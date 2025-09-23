@@ -286,20 +286,12 @@ Resources:
   ConfigRecorder:
     Type: AWS::Config::ConfigurationRecorder
     Properties:
-      Name: default
+      Name: securitystack-recorder
       RoleARN: !GetAtt ConfigServiceRole.Arn
       RecordingGroup:
         AllSupported: true
         IncludeGlobalResourceTypes: true
     DependsOn: ConfigServiceRole
-
-  ConfigRecorderStatus:
-  Type: AWS::Config::ConfigurationRecorderStatus
-  Properties:
-    Name: !Ref ConfigRecorder   # this is valid
-    IsEnabled: true
-  DependsOn: ConfigRecorder
-
 
   ####################################################
   # SNS topic and subscription (email)
@@ -408,16 +400,26 @@ Resources:
   ####################################################
   # Conformance Pack resource (points to uploaded S3 object)
   ####################################################
+  # SecurityBestPracticesConformancePack:
+  #   Type: AWS::Config::ConformancePack
+  #   Properties:
+  #     ConformancePackName: !Ref ConformancePackName
+  #     TemplateS3Uri: !Sub "s3://${CentralConfigBucket}/${ConformancePackS3Key}"
+  #   DependsOn:
+  #     - ConformancePackUploaderCustom
+  #     - ConfigDeliveryChannel
+  #   Metadata:
+  #     Comment: "Uses the uploaded YAML in S3 as the template for the conformance pack."
   SecurityBestPracticesConformancePack:
     Type: AWS::Config::ConformancePack
     Properties:
-      ConformancePackName: !Ref ConformancePackName
-      TemplateS3Uri: !Sub "s3://${CentralConfigBucket}/${ConformancePackS3Key}"
+      ConformancePackName: "aws-managed-best-practices"
+      TemplateS3Uri: "s3://aws-config-conformance-packs-us-east-1/AWS-Security-Best-Practices.yml"
     DependsOn:
-      - ConformancePackUploaderCustom
       - ConfigDeliveryChannel
     Metadata:
-      Comment: "Uses the uploaded YAML in S3 as the template for the conformance pack."
+      Comment: "Uses AWS-managed AWS security best practices conformance pack"
+
 
   ####################################################
   # Reporter Lambda (scoped permissions)
