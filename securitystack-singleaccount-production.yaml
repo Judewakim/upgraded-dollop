@@ -17,7 +17,7 @@ Parameters:
     Description: "S3 key where the conformance pack YAML will be uploaded."
   ConformancePackName:
     Type: String
-    Default: "SecurityBestPractices-Custom"
+    Default: "SecurityBestPractices"
     Description: "Name used for the deployed Conformance Pack."
 
 Metadata:
@@ -292,7 +292,9 @@ Resources:
       RecordingGroup:
         AllSupported: true
         IncludeGlobalResourceTypes: true
-    DependsOn: ConfigServiceRole
+    DependsOn: 
+      - ConfigServiceRole
+      - ConfigDeliveryChannel 
 
   ####################################################
   # SNS topic and subscription (email)
@@ -316,7 +318,9 @@ Resources:
       S3KeyPrefix: config-delivery
       SnsTopicARN: !Ref ConfigNotificationsTopic
     DependsOn:
-      - ConfigRecorder
+      - ConfigServiceRole
+      - CentralConfigBucket
+      - ConfigNotficationsTopic
 
   # ####################################################
   # # Lambda to start the recorder - limited policy to account/region
@@ -418,6 +422,7 @@ Resources:
       TemplateS3Uri: "s3://aws-config-conformance-packs-us-east-1/AWS-Security-Best-Practices.yml"
     DependsOn:
       - ConfigDeliveryChannel
+      - ConfigRecorder
     Metadata:
       Comment: "Uses AWS-managed AWS security best practices conformance pack"
 
