@@ -17,7 +17,7 @@ Parameters:
     Description: "S3 key where the conformance pack YAML will be uploaded."
   ConformancePackName:
     Type: String
-    Default: "SecurityBestPractices"
+    Default: "SecurityBestPractices-Custom"
     Description: "Name used for the deployed Conformance Pack."
 
 Metadata:
@@ -97,143 +97,6 @@ Resources:
             Condition:
               StringEquals:
                 "s3:x-amz-acl": "bucket-owner-full-control"
-      
-
-  # ##################################################
-  # # Uploader Lambda role - scoped to bucket objects
-  # ##################################################
-  # UploaderLambdaRole:
-  #   Type: AWS::IAM::Role
-  #   Properties:
-  #     RoleName: !Sub "${AWS::StackName}-uploader-role"
-  #     AssumeRolePolicyDocument:
-  #       Version: '2012-10-17'
-  #       Statement:
-  #         - Effect: Allow
-  #           Principal:
-  #             Service: lambda.amazonaws.com
-  #           Action: sts:AssumeRole
-  #     ManagedPolicyArns:
-  #       - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-  #     Policies:
-  #       - PolicyName: UploaderS3Policy
-  #         PolicyDocument:
-  #           Version: '2012-10-17'
-  #           Statement:
-  #             # Allow writing the specific object/key(s) in the central bucket
-  #             - Effect: Allow
-  #               Action:
-  #                 - s3:PutObject
-  #                 - s3:PutObjectAcl
-  #                 - s3:PutObjectTagging
-  #               Resource:
-  #                 - !Sub "${CentralConfigBucket.Arn}/${ConformancePackS3Key}"
-  #                 - !Sub "${CentralConfigBucket.Arn}/conformance-packs/*"
-
-  # ####################################################
-  # # Conformance pack uploader Lambda (custom resource)
-  # ####################################################
-  # ConformancePackUploaderFunction:
-  #   Type: AWS::Lambda::Function
-  #   Properties:
-  #     FunctionName: !Sub "${AWS::StackName}-conformance-uploader"
-  #     Runtime: python3.11
-  #     Handler: index.handler
-  #     Role: !GetAtt UploaderLambdaRole.Arn
-  #     Timeout: 120
-  #     MemorySize: 128
-  #     Environment:
-  #       Variables:
-  #         BUCKET: !Ref CentralConfigBucket
-  #         KEY: !Ref ConformancePackS3Key
-  #     Code:
-  #       ZipFile: |
-  #         import os, json, boto3, traceback, urllib.request
-  #         s3 = boto3.client('s3')
-
-  #         # Snapshot of AWS Security Best Practices conformance pack (representative).
-  #         # Replace with official content if desired before deployment.
-  #         CONFORMANCE_YAML = r"""
-  #         # Security Best Practices - snapshot representative conformance pack
-  #         Parameters: {}
-  #         Resources:
-  #           root-account-mfa-enabled:
-  #             Type: AWS::Config::ConfigRule
-  #             Properties:
-  #               ConfigRuleName: root-account-mfa-enabled
-  #               Source:
-  #                 Owner: AWS
-  #                 SourceIdentifier: ROOT_ACCOUNT_MFA_ENABLED
-  #           cloudtrail-enabled:
-  #             Type: AWS::Config::ConfigRule
-  #             Properties:
-  #               ConfigRuleName: cloudtrail-enabled
-  #               Source:
-  #                 Owner: AWS
-  #                 SourceIdentifier: CLOUD_TRAIL_ENABLED
-  #           s3-bucket-public-read-prohibited:
-  #             Type: AWS::Config::ConfigRule
-  #             Properties:
-  #               ConfigRuleName: s3-bucket-public-read-prohibited
-  #               Source:
-  #                 Owner: AWS
-  #                 SourceIdentifier: S3_BUCKET_PUBLIC_READ_PROHIBITED
-  #           iam-password-policy:
-  #             Type: AWS::Config::ConfigRule
-  #             Properties:
-  #               ConfigRuleName: iam-password-policy
-  #               InputParameters:
-  #                 MinimumPasswordLength: '14'
-  #                 RequireSymbols: 'true'
-  #                 RequireNumbers: 'true'
-  #                 RequireUppercaseCharacters: 'true'
-  #                 RequireLowercaseCharacters: 'true'
-  #                 MaxPasswordAge: '90'
-  #               Source:
-  #                 Owner: AWS
-  #                 SourceIdentifier: IAM_PASSWORD_POLICY
-  #         """
-
-  #         def send_cfn_response(event, context, status, reason=None):
-  #             response_body = {
-  #                 'Status': status,
-  #                 'Reason': reason or ('See CloudWatch Logs: ' + context.log_stream_name),
-  #                 'PhysicalResourceId': context.log_stream_name,
-  #                 'StackId': event.get('StackId'),
-  #                 'RequestId': event.get('RequestId'),
-  #                 'LogicalResourceId': event.get('LogicalResourceId'),
-  #                 'Data': {}
-  #             }
-  #             data = json.dumps(response_body).encode('utf-8')
-  #             req = urllib.request.Request(event['ResponseURL'], data=data, method='PUT')
-  #             req.add_header('Content-Type', '')
-  #             req.add_header('Content-Length', str(len(data)))
-  #             try:
-  #                 urllib.request.urlopen(req)
-  #             except Exception as e:
-  #                 print("Failed sending CFN response:", e)
-
-  #         def handler(event, context):
-  #             try:
-  #               if event['RequestType'] in ('Create', 'Update'):
-  #                 bucket = os.environ['BUCKET']
-  #                 key = os.environ['KEY']
-  #                 s3.put_object(Bucket=bucket, Key=key, Body=CONFORMANCE_YAML.encode('utf-8'))
-  #                 print(f"Uploaded conformance pack to s3://{bucket}/{key}")
-  #                 send_cfn_response(event, context, "SUCCESS")
-  #               else:
-  #                 # Delete - no-op to preserve artifact
-  #                 send_cfn_response(event, context, "SUCCESS")
-  #             except Exception as e:
-  #               traceback.print_exc()
-  #               send_cfn_response(event, context, "FAILED", reason=str(e))
-
-  # ConformancePackUploaderCustom:
-  #   Type: Custom::ConformanceUploader
-  #   Properties:
-  #     ServiceToken: !GetAtt ConformancePackUploaderFunction.Arn
-  #   DependsOn:
-  #     - ConformancePackUploaderFunction
 
   ####################################################
   # Config service role (inline policy for single-account)
@@ -282,21 +145,6 @@ Resources:
                 Resource: "*"
 
   ####################################################
-  # Configuration Recorder (records all supported & global types)
-  ####################################################
-  ConfigRecorder:
-    Type: AWS::Config::ConfigurationRecorder
-    Properties:
-      Name: securitystack-recorder
-      RoleARN: !GetAtt ConfigServiceRole.Arn
-      RecordingGroup:
-        AllSupported: true
-        IncludeGlobalResourceTypes: true
-    DependsOn: 
-      - ConfigServiceRole
-      - ConfigDeliveryChannel 
-
-  ####################################################
   # SNS topic and subscription (email)
   ####################################################
   ConfigNotificationsTopic:
@@ -320,101 +168,26 @@ Resources:
     DependsOn:
       - ConfigServiceRole
       - CentralConfigBucket
-      - ConfigNotficationsTopic
+      - ConfigNotificationsTopic
 
-  # ####################################################
-  # # Lambda to start the recorder - limited policy to account/region
-  # ####################################################
-  # StartRecorderRole:
-  #   Type: AWS::IAM::Role
-  #   Properties:
-  #     RoleName: !Sub "${AWS::StackName}-start-recorder-role"
-  #     AssumeRolePolicyDocument:
-  #       Version: '2012-10-17'
-  #       Statement:
-  #         - Effect: Allow
-  #           Principal:
-  #             Service: lambda.amazonaws.com
-  #           Action: sts:AssumeRole
-  #     ManagedPolicyArns:
-  #       - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-  #     Policies:
-  #       - PolicyName: StartRecorderPolicy
-  #         PolicyDocument:
-  #           Version: '2012-10-17'
-  #           Statement:
-  #             # config:StartConfigurationRecorder cannot be restricted to a precise ARN in some regions/APIs
-  #             # We scope it to this account/region using a "starts-with" style with the config resource prefix.
-  #             - Effect: Allow
-  #               Action:
-  #                 - config:StartConfigurationRecorder
-  #                 - config:DescribeConfigurationRecorders
-  #               Resource: !Sub "arn:aws:config:${AWS::Region}:${AWS::AccountId}:*"
-
-  # StartRecorderFunction:
-  #   Type: AWS::Lambda::Function
-  #   Properties:
-  #     FunctionName: !Sub "${AWS::StackName}-start-config-recorder"
-  #     Runtime: python3.11
-  #     Handler: index.handler
-  #     Role: !GetAtt StartRecorderRole.Arn
-  #     Timeout: 60
-  #     MemorySize: 128
-  #     Code:
-  #       ZipFile: |
-  #         import json, boto3, urllib.request, traceback
-  #         cfg = boto3.client('config')
-
-  #         def send_cfn_response(event, context, status, reason=None):
-  #             response_body = {
-  #                 'Status': status,
-  #                 'Reason': reason or ('See CloudWatch Logs: ' + context.log_stream_name),
-  #                 'PhysicalResourceId': context.log_stream_name,
-  #                 'StackId': event.get('StackId'),
-  #                 'RequestId': event.get('RequestId'),
-  #                 'LogicalResourceId': event.get('LogicalResourceId'),
-  #                 'Data': {}
-  #             }
-  #             data = json.dumps(response_body).encode('utf-8')
-  #             req = urllib.request.Request(event['ResponseURL'], data=data, method='PUT')
-  #             req.add_header('Content-Type', '')
-  #             req.add_header('Content-Length', str(len(data)))
-  #             try:
-  #                 urllib.request.urlopen(req)
-  #             except Exception as e:
-  #                 print("Failed sending CFN response:", e)
-
-  #         def handler(event, context):
-  #             try:
-  #               if event['RequestType'] in ('Create', 'Update'):
-  #                 cfg.start_configuration_recorder(ConfigurationRecorderName='default')
-  #                 send_cfn_response(event, context, "SUCCESS")
-  #               else:
-  #                 send_cfn_response(event, context, "SUCCESS")
-  #             except Exception as e:
-  #               traceback.print_exc()
-  #               send_cfn_response(event, context, "FAILED", reason=str(e))
-
-  # StartRecorderCustom:
-  #   Type: Custom::StartConfigRecorder
-  #   Properties:
-  #     ServiceToken: !GetAtt StartRecorderFunction.Arn
-  #   DependsOn:
-  #     - ConfigDeliveryChannel
+  ####################################################
+  # Configuration Recorder (records all supported & global types)
+  ####################################################
+  ConfigRecorder:
+    Type: AWS::Config::ConfigurationRecorder
+    Properties:
+      Name: securitystack-recorder
+      RoleARN: !GetAtt ConfigServiceRole.Arn
+      RecordingGroup:
+        AllSupported: true
+        IncludeGlobalResourceTypes: true
+    DependsOn:
+      - ConfigServiceRole
+      - ConfigDeliveryChannel
 
   ####################################################
   # Conformance Pack resource (points to uploaded S3 object)
   ####################################################
-  # SecurityBestPracticesConformancePack:
-  #   Type: AWS::Config::ConformancePack
-  #   Properties:
-  #     ConformancePackName: !Ref ConformancePackName
-  #     TemplateS3Uri: !Sub "s3://${CentralConfigBucket}/${ConformancePackS3Key}"
-  #   DependsOn:
-  #     - ConformancePackUploaderCustom
-  #     - ConfigDeliveryChannel
-  #   Metadata:
-  #     Comment: "Uses the uploaded YAML in S3 as the template for the conformance pack."
   SecurityBestPracticesConformancePack:
     Type: AWS::Config::ConformancePack
     Properties:
@@ -425,7 +198,6 @@ Resources:
       - ConfigRecorder
     Metadata:
       Comment: "Uses AWS-managed AWS security best practices conformance pack"
-
 
   ####################################################
   # Reporter Lambda (scoped permissions)
