@@ -17,7 +17,7 @@ Parameters:
     Description: "S3 key where the conformance pack YAML will be uploaded."
   ConformancePackName:
     Type: String
-    Default: "SecurityBestPractices-Custom"
+    Default: "SecurityBestPractices"
     Description: "Name used for the deployed Conformance Pack."
 
 Metadata:
@@ -169,6 +169,7 @@ Resources:
       - ConfigServiceRole
       - CentralConfigBucket
       - ConfigNotificationsTopic
+      - ConfigRecorder
 
   ####################################################
   # Configuration Recorder (records all supported & global types)
@@ -183,7 +184,6 @@ Resources:
         IncludeGlobalResourceTypes: true
     DependsOn:
       - ConfigServiceRole
-      - ConfigDeliveryChannel
 
   ####################################################
   # Conformance Pack resource (points to uploaded S3 object)
